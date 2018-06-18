@@ -9,49 +9,42 @@ entity linear_regression_fsm is
 	);
 	port ( 
 		clock			 : in std_logic;
-		goto_next    : in std_logic := '0';
+		jump         : in std_logic := '0';
 		state_cod    : out std_logic_vector(2 downto 0) := "111"
 	);
 end linear_regression_fsm;
 
 architecture behavorial of linear_regression_fsm is
 	type state is (COMECAR, ESCRITA, LEITURA, PROCESSO, ITERAR, ESPERA);
-	signal state_now, next_state: state := ESPERA;
-	signal jump : std_logic;
 begin
-	jump <= goto_next;
-	
-	process(state_now, jump)
-	begin
-		case state_now is
-			when COMECAR => next_state <= ESCRITA;
-			when ESCRITA => next_state <= LEITURA;
-			when LEITURA => next_state <= PROCESSO;
-			when PROCESSO => 
-				if(jump = '0') then 
-					next_state <= LEITURA;
-				else 
-					next_state <= ITERAR;
-				end if;
-			when ITERAR => 
-				if(jump = '0') then 
-					next_state <= LEITURA;
-				else 
-					next_state <= ESPERA;
-				end if;
-			when ESPERA => 
-				if(jump = '0') then 
-					next_state <= ESPERA;
-				else 
-					next_state <= COMECAR;
-				end if;
-		end case;
-	end process;
-	
 	process(clock)
+		variable state_now: state := ESPERA;
 	begin
-		if (rising_edge(clock)) then
-			state_now <= next_state;
+		if (falling_edge(clock)) then
+			case state_now is
+				when COMECAR => state_now := ESCRITA;
+				when ESCRITA => state_now := LEITURA;
+				when LEITURA => state_now := PROCESSO;
+				when PROCESSO => 
+					if(jump = '0') then 
+						state_now := LEITURA;
+					else 
+						state_now := ITERAR;
+					end if;
+				when ITERAR => 
+					if(jump = '0') then 
+						state_now := LEITURA;
+					else 
+						state_now := ESPERA;
+					end if;
+				when ESPERA => 
+					if(jump = '1') then 
+						state_now := ESPERA;
+					else 
+						state_now := COMECAR;
+					end if;
+			end case;
+			
 			case state_now is
 				when COMECAR  => state_cod <= "000";
 				when ESCRITA  => state_cod <= "001";

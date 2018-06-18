@@ -42,15 +42,15 @@ architecture behavioral of linear_regression is
 		);
 		port ( 
 			clock		 : in std_logic;
-			goto_next      : in std_logic;
+			jump      : in std_logic;
 			state_cod : out std_logic_vector(2 downto 0) := "111"
 		);
 	end component;
-	constant alpha  	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(4200, WORDSIZE);
+	constant alpha  	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
 	constant x_addr 	 : integer:= 0;
 	constant y_addr 	 : integer := 0;
 	constant size_addr : integer := 0;
-	constant total_itt : integer := 3;
+	constant total_itt : integer := 2;
 	signal clock_states: std_logic := '0';
 	signal w_size      : std_logic := '0';
 	signal w_x  	    : std_logic := '0';
@@ -71,7 +71,7 @@ begin
 	-- State Machine
 	fsm: linear_regression_fsm port map (
 		clock => clock and run,
-		goto_next => next_state,
+		jump => next_state,
 		state_cod => state_cod
 	);
 	
@@ -102,13 +102,18 @@ begin
 		variable sum_0 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(0, WORDSIZE);
 		variable sum_1 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(0, WORDSIZE);
 		variable h   : signed(WORDSIZE-1 DOWNTO 0) := to_signed(0, WORDSIZE);
+		
+		variable start_loop : std_logic;
+
 	begin
 		if (rising_edge(clock)) then
 			if(run = '1') then
+				if(state_cod = "000") then
+					next_state <= '0';
+					
 				-- Escrever novo ponto na memoria
-				if(state_cod = "001") then
+				elsif(state_cod = "001") then
 					if(w_size = '0') then
-						next_state <= '0'; -- Stay on this state
 						
 						size <= size_after + 1;
 						curr_pos <= size;
@@ -119,22 +124,26 @@ begin
 						sum_1 := to_signed(0, WORDSIZE);
 						new_theta0 <= to_signed(1, WORDSIZE);
 						new_theta1 <= to_signed(1, WORDSIZE);
+						
+						start_loop := '1';
 					end if;
+					
 				-- Iterar sobre os dados
 				elsif(state_cod = "010") then
-					if(w_size = '1') then
+					if(start_loop = '1') then
 						curr_pos <= to_signed(0, WORDSIZE);
 						w_size <= '0';
 						w_x <= '0';
 						w_y <= '0';
+						start_loop := '0';
 					else
-						curr_pos <= curr_pos + 1;
+						curr_pos <= curr_pos + 1;	
 					end if;
-					
+				elsif(state_cod = "011") then
 					if(curr_pos >= size-1) then
 						next_state <= '1';
 					end if;
-				elsif(state_cod = "011") then
+					
 					-- Aqui jas regressao linear
 					
 					--h := new_theta0 + signed(std_logic_vector(new_theta1 * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
@@ -143,29 +152,31 @@ begin
 					sum_0 := sum_0 + signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0));
 					--sum_1 := sum_0 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2))) * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
 					sum_1 := sum_1 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0)) * new_x)(WORDSIZE-1 downto 0));
+					
 				elsif (state_cod = "100") then
 					curr_pos <= to_signed(0, WORDSIZE);
-					--Danger: uncomment for really slow simulation
-					--new_theta0 <= new_theta0 - signed(std_logic_vector(alpha * sum_0)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
-					--new_theta1 <= new_theta1 - signed(std_logic_vector(alpha * sum_1)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
-					if(curr_itt <= total_itt) then
+					--Danger Will Robinson: uncomment for really slow simulation
+					new_theta0 <= new_theta0 - signed(std_logic_vector(alpha * sum_0)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
+					new_theta1 <= new_theta1 - signed(std_logic_vector(alpha * sum_1)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
+					if(curr_itt < total_itt) then
 						curr_itt <= curr_itt + 1;
 						next_state <= '0';
+						start_loop := '1';
+						sum_0 := to_signed(0, WORDSIZE);
+						sum_1 := to_signed(0, WORDSIZE);
 					else
 						curr_itt <= 0;
 						next_state <= '1';
 					end if;
-				else
-					next_state <= '0';
 				end if;
 			else
-				next_state <= '1';
+				next_state <= '0';
 			end if;
-		end if;  
+		end if;
 	end process;
 	
-	theta0 <= curr_pos;
-	theta1 <= to_signed(curr_itt, WORDSIZE);
+	theta0 <= new_theta0;
+	theta1 <= new_theta1;
 	test <= state_cod;
 	test2 <= next_state;
 end behavioral;
