@@ -2,10 +2,10 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity Ram is
+entity ram is
   GENERIC (
 			WORDSIZE		: NATURAL	:= 64;
-			BITS_OF_ADDR	: NATURAL	:= 10;
+			BITS_OF_ADDR	: NATURAL	:= 7;
 			MIF_FILE		: STRING	:= "memory.mif"
 		);
 		PORT (
@@ -15,9 +15,9 @@ entity Ram is
 			datain  : IN	SIGNED(WORDSIZE-1 DOWNTO 0);
 			dataout : OUT	SIGNED(WORDSIZE-1 DOWNTO 0)
 		);
-end Ram;
+end ram;
 
-architecture rtl of Ram is
+architecture rtl of ram is
 
 	type mem_array is array ((2**(BITS_OF_ADDR))-1 downto 0) of signed((WORDSIZE-1) downto 0);
 	signal mem : mem_array;
