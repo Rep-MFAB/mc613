@@ -13,9 +13,7 @@ entity linear_regression is
 		y	   	: in signed(WORDSIZE-1 DOWNTO 0);
 		run		: in std_logic;
 		theta0  	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE);
-		theta1	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE);
-		test     : out std_logic_vector(2 downto 0);
-		test2     : out std_logic
+		theta1	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE)
 	);
 end linear_regression;
 
@@ -65,8 +63,6 @@ architecture behavioral of linear_regression is
 	signal state_cod   : std_logic_vector(2 downto 0) := "111";
 	signal new_theta0	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
 	signal new_theta1	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
-	signal tmp0		 : signed(WORDSIZE-1 DOWNTO 0); -- TODO: remove
-	signal tmp1	    : signed(WORDSIZE-1 DOWNTO 0); -- TODO: remove
 begin
 	-- State Machine
 	fsm: linear_regression_fsm port map (
@@ -146,12 +142,12 @@ begin
 					
 					-- Aqui jas regressao linear
 					
-					--h := new_theta0 + signed(std_logic_vector(new_theta1 * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
-					h := new_theta0 + signed(std_logic_vector(new_theta1 * new_x)(WORDSIZE-1 downto 0));
-					--sum_0 := sum_0 + signed(std_logic_vector((h - new_y) * (h - new_y))((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
-					sum_0 := sum_0 + signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0));
-					--sum_1 := sum_0 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2))) * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
-					sum_1 := sum_1 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0)) * new_x)(WORDSIZE-1 downto 0));
+					h := new_theta0 + signed(std_logic_vector(new_theta1 * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
+					--h := new_theta0 + signed(std_logic_vector(new_theta1 * new_x)(WORDSIZE-1 downto 0));
+					sum_0 := sum_0 + signed(std_logic_vector((h - new_y) * (h - new_y))((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
+					--sum_0 := sum_0 + signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0));
+					sum_1 := sum_0 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2))) * new_x)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
+					--sum_1 := sum_1 + signed(std_logic_vector(signed(std_logic_vector((h - new_y) * (h - new_y))(WORDSIZE-1 downto 0)) * new_x)(WORDSIZE-1 downto 0));
 					
 				elsif (state_cod = "100") then
 					curr_pos <= to_signed(0, WORDSIZE);
@@ -177,6 +173,4 @@ begin
 	
 	theta0 <= new_theta0;
 	theta1 <= new_theta1;
-	test <= state_cod;
-	test2 <= next_state;
 end behavioral;
