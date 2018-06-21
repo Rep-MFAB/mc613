@@ -13,7 +13,8 @@ entity linear_regression is
 		y	   	: in signed(WORDSIZE-1 DOWNTO 0);
 		run		: in std_logic;
 		theta0  	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE);
-		theta1	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE)
+		theta1	: out signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**32, WORDSIZE);
+		finished : out std_logic
 	);
 end linear_regression;
 
@@ -44,11 +45,15 @@ architecture behavioral of linear_regression is
 			state_cod : out std_logic_vector(2 downto 0) := "111"
 		);
 	end component;
-	constant alpha  	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
+	
+	signal next_state  : std_logic := '0';
+	signal state_cod   : std_logic_vector(2 downto 0) := "111";
+	
+	constant alpha  	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(4200, WORDSIZE);
 	constant x_addr 	 : integer:= 0;
 	constant y_addr 	 : integer := 0;
 	constant size_addr : integer := 0;
-	constant total_itt : integer := 2;
+	constant total_itt : integer := 20;
 	signal clock_states: std_logic := '0';
 	signal w_size      : std_logic := '0';
 	signal w_x  	    : std_logic := '0';
@@ -59,10 +64,8 @@ architecture behavioral of linear_regression is
 	signal new_y		 : signed(WORDSIZE-1 DOWNTO 0);
 	signal curr_pos	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(0, WORDSIZE);
 	signal curr_itt	 : integer := 0;
-	signal next_state  : std_logic := '0';
-	signal state_cod   : std_logic_vector(2 downto 0) := "111";
-	signal new_theta0	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
-	signal new_theta1	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(1, WORDSIZE);
+	signal new_theta0	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**33, WORDSIZE);
+	signal new_theta1	 : signed(WORDSIZE-1 DOWNTO 0) := to_signed(2**33, WORDSIZE);
 begin
 	-- State Machine
 	fsm: linear_regression_fsm port map (
@@ -152,8 +155,8 @@ begin
 				elsif (state_cod = "100") then
 					curr_pos <= to_signed(0, WORDSIZE);
 					--Danger Will Robinson: uncomment for really slow simulation
-					new_theta0 <= new_theta0 - signed(std_logic_vector(alpha * sum_0)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
-					new_theta1 <= new_theta1 - signed(std_logic_vector(alpha * sum_1)(WORDSIZE-1 downto 0)) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)(WORDSIZE-1 downto 0));
+					new_theta0 <= new_theta0 - signed(std_logic_vector(alpha * sum_0)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2))) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
+					new_theta1 <= new_theta1 - signed(std_logic_vector(alpha * sum_1)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2))) / signed(std_logic_vector(to_signed(2, WORDSIZE) * size)((WORDSIZE*2 - WORDSIZE/2)-1 downto (WORDSIZE/2)));
 					if(curr_itt < total_itt) then
 						curr_itt <= curr_itt + 1;
 						next_state <= '0';
@@ -161,11 +164,13 @@ begin
 						sum_0 := to_signed(0, WORDSIZE);
 						sum_1 := to_signed(0, WORDSIZE);
 					else
+						finished <= '1';
 						curr_itt <= 0;
 						next_state <= '1';
 					end if;
 				end if;
 			else
+				finished <= '0';
 				next_state <= '0';
 			end if;
 		end if;

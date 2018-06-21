@@ -63,7 +63,7 @@ end;
 architecture rtl of kbdex_ctrl is
 	component ps2_iobase
 		generic(
-			clkfreq : integer	-- This is the system clock value in kHz
+			clkfreq : integer -- This is the system clock value in kHz
 		);
 		port(
 			ps2_data	:	inout	std_logic;
